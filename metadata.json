@@ -1,0 +1,6 @@
+{
+  "name": "KJerry Movie Streaming Service",
+  "description": "A sleek dark-themed movie streaming web app and admin management panel with Firebase backend, URL-based media streaming, and mobile-first design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Movies Hub - Stream Movies & Series</title>
+  <meta name="description" content="Movies Hub streaming service. Browse trending blockbusters, stream your favorites, and manage watchlists." />
+  <meta property="og:title" content="Movies Hub - Stream Movies & Series" />
+  <meta property="og:description" content="Watch trending movies, trailers, and series in high definition on Movies Hub." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/png" href="/assets/aistudio/file_00000000220c82118cc0e711cdf74dd7_ca7eec3e.png" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Firebase Compat SDKs (App, Auth, Realtime Database) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+  <style>
+    /* Custom scrollbar styling */
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Smooth carousel animation */
+    .carousel-item {
+      transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+    }
+    /* Bottom nav frosted glass effect */
+    .frosted-glass {
+      background-color: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.55);
+    }
+    .poster-glow:hover {
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.35);
+    }
+    /* Staggered entrance animation for search & filter results */
+    @keyframes cardFadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(22px) scale(0.94);
+      }
+      60% {
+        opacity: 0.85;
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .stagger-card {
+      opacity: 0;
+      animation: cardFadeInUp 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      will-change: opacity, transform;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen antialiased flex flex-col selection:bg-blue-600 selection:text-white">
+
+  <!-- Main App Shell (Centered for mobile-first feel, scales responsively for desktop) -->
+  <div class="w-full max-w-lg mx-auto md:max-w-3xl lg:max-w-5xl min-h-screen flex flex-col bg-slate-950/80 shadow-2xl relative pb-24">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="#home" onclick="navigateTo('home'); return false;" class="flex items-center gap-2.5 group">
+          <img src="/assets/aistudio/file_00000000220c82118cc0e711cdf74dd7_ca7eec3e.png" alt="Movies Hub Logo" class="h-9 w-auto object-contain rounded-md shadow-lg group-hover:scale-105 transition-transform" />
+          <span class="text-lg font-black tracking-wider text-white hidden sm:inline">MOVIES <span class="text-red-500">HUB</span></span>
+        </a>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Live Firebase Status Indicator -->
+        <button id="fb-status-btn" onclick="openFirebaseSettingsModal()" title="Firebase Connection Status" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 transition">
+          <span id="fb-status-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="fb-status-text" class="text-slate-300">Live Sync</span>
+        </button>
+
+        <!-- Search quick jump -->
+        <button onclick="navigateTo('search')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition" title="Search">
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+        </button>
+
+        <!-- Telegram Support Link -->
+        <a href="https://t.me/BtwJerry01" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 hover:text-sky-300 border border-sky-500/30 transition" title="Telegram Support @BtwJerry01">
+          <i class="fa-brands fa-telegram text-sm"></i>
+          <span class="hidden sm:inline">Support</span>
+        </a>
+
+        <!-- Admin Portal Direct Link -->
+        <a href="admin.html" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 transition">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Admin</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- CONTENT PAGES (SPA Navigation by toggling display) -->
+
+    <!-- PAGE 1: HOME -->
+    <main id="page-home" class="page-view flex-1 px-3 sm:px-4 py-4 space-y-6">
+      
+      <!-- Auto-Sliding Hero Banner Carousel -->
+      <section class="relative rounded-2xl overflow-hidden shadow-2xl bg-slate-900 border border-slate-800">
+        <div id="banner-carousel-container" class="relative w-full h-56 sm:h-72 md:h-84 overflow-hidden">
+          <!-- Banners dynamically injected here -->
+          <div class="flex items-center justify-center h-full text-slate-500">
+            <i class="fa-solid fa-circle-notch fa-spin text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- Carousel Indicators -->
+        <div id="banner-indicators" class="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-20"></div>
+
+        <!-- Carousel Left / Right Buttons -->
+        <button onclick="prevBanner()" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition z-20">
+          <i class="fa-solid fa-chevron-left text-xs"></i>
+        </button>
+        <button onclick="nextBanner()" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition z-20">
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+      </section>
+
+      <!-- Quick Category Filter Chips -->
+      <section>
+        <div id="home-category-pills" class="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- Categorized Movie Carousels -->
+      <div id="movie-carousels-container" class="space-y-6">
+        <!-- Rendered dynamically (Trending, Action, Sci-Fi, etc.) -->
+        <div class="text-center py-10 text-slate-500">
+          <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+          <p class="text-sm">Loading movies from Movies Hub database...</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- PAGE 2: SEARCH -->
+    <main id="page-search" class="page-view hidden flex-1 px-3 sm:px-4 py-4 space-y-4">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Search movies by title, cast, or genre..." 
+          oninput="handleSearchInput(this.value)"
+          class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-10 pr-10 py-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+        />
+        <button id="search-clear-btn" onclick="clearSearch()" class="hidden absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Search Category Badges -->
+      <div id="search-category-filters" class="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1"></div>
+
+      <!-- Search Results Grid -->
+      <div id="search-results-section">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <span id="search-results-count">All Movies</span>
+          </h2>
+        </div>
+        <div id="search-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+          <!-- Movie cards rendered dynamically -->
+        </div>
+      </div>
+    </main>
+
+    <!-- PAGE 3: CATEGORIES -->
+    <main id="page-categories" class="page-view hidden flex-1 px-3 sm:px-4 py-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-white">Browse Categories</h1>
+          <p class="text-xs text-slate-400">Discover movies curated by genre</p>
+        </div>
+      </div>
+
+      <!-- Colorful Category Grid -->
+      <div id="categories-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Selected Category Filtered Movie List (if filtered) -->
+      <div id="category-selected-movies-container" class="hidden mt-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h3 id="category-selected-title" class="text-lg font-bold text-blue-400"></h3>
+          <button onclick="clearSelectedCategory()" class="text-xs text-slate-400 hover:text-white">
+            <i class="fa-solid fa-arrow-left mr-1"></i> All Categories
+          </button>
+        </div>
+        <div id="category-selected-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4"></div>
+      </div>
+    </main>
+
+    <!-- PAGE 4: PROFILE & AUTH -->
+    <main id="page-profile" class="page-view hidden flex-1 px-3 sm:px-4 py-4 space-y-6">
+      
+      <!-- Logged Out View -->
+      <div id="profile-logged-out" class="max-w-md mx-auto space-y-6 pt-2">
+        <div class="text-center space-y-3">
+          <img src="/assets/aistudio/file_00000000220c82118cc0e711cdf74dd7_ca7eec3e.png" alt="Movies Hub Logo" class="w-48 sm:w-56 h-auto object-contain mx-auto rounded-2xl shadow-2xl border border-slate-800 bg-black/70 p-3" />
+          <h2 class="text-2xl font-bold text-white">Welcome to Movies Hub</h2>
+          <p class="text-xs text-slate-400">Sign in to save your favorite movies, sync watchlists, and manage playback</p>
+        </div>
+
+        <!-- Auth Tabs (Sign In / Register) -->
+        <div class="flex rounded-xl bg-slate-900 p-1 border border-slate-800">
+          <button id="auth-tab-signin" onclick="switchAuthTab('signin')" class="flex-1 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white transition">
+            Sign In
+          </button>
+          <button id="auth-tab-signup" onclick="switchAuthTab('signup')" class="flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">
+            Create Account
+          </button>
+        </div>
+
+        <!-- Auth Form -->
+        <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div id="auth-error-msg" class="hidden p-3 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="auth-error-text"></span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Email Address</label>
+            <div class="relative">
+              <i class="fa-solid fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+              <input 
+                type="email" 
+                id="auth-email" 
+                required 
+                placeholder="name@example.com" 
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+            <div class="relative">
+              <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+              <input 
+                type="password" 
+                id="auth-password" 
+                required 
+                minlength="6"
+                placeholder="••••••••" 
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            id="auth-submit-btn" 
+            class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-semibold text-xs transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
+          >
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            <span id="auth-submit-btn-text">Sign In</span>
+          </button>
+
+          <!-- Quick 1-Click Demo Account -->
+          <div class="pt-2 border-t border-slate-800 text-center">
+            <button 
+              type="button" 
+              onclick="fillDemoAccount()" 
+              class="text-xs text-blue-400 hover:text-blue-300 hover:underline flex items-center justify-center gap-1 mx-auto"
+            >
+              <i class="fa-solid fa-bolt text-yellow-400"></i> Fast Demo Account Login
+            </button>
+          </div>
+        </form>
+
+        <!-- Telegram Support Option Card -->
+        <div class="bg-gradient-to-r from-slate-900 to-sky-950/30 border border-sky-800/40 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center text-lg flex-shrink-0">
+              <i class="fa-brands fa-telegram"></i>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+                Support & Inquiries
+              </h4>
+              <p class="text-xs text-slate-400">Telegram: <span class="text-sky-400 font-semibold">@BtwJerry01</span></p>
+            </div>
+          </div>
+          <a href="https://t.me/BtwJerry01" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-md shadow-sky-600/30 flex items-center gap-1.5 transition">
+            <i class="fa-brands fa-telegram"></i>
+            <span>Support</span>
+          </a>
+        </div>
+
+        <!-- Admin Shortcut Card -->
+        <div class="bg-gradient-to-r from-slate-900 to-blue-950/40 border border-blue-900/40 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-lock text-blue-400"></i> Administrator?
+            </h4>
+            <p class="text-xs text-slate-400">Manage movies, categories, and banners</p>
+          </div>
+          <a href="admin.html" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md transition">
+            Go to Admin
+          </a>
+        </div>
+      </div>
+
+      <!-- Logged In Profile View -->
+      <div id="profile-logged-in" class="hidden space-y-6">
+        <!-- User Badge Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
+          <div class="flex items-center gap-3.5">
+            <div id="user-avatar" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-lg flex items-center justify-center shadow-lg shadow-blue-600/30">
+              U
+            </div>
+            <div>
+              <h3 id="user-email-display" class="text-sm font-bold text-white">user@example.com</h3>
+              <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Active Streamer
+              </p>
+            </div>
+          </div>
+          <button onclick="handleLogout()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-300 text-xs font-semibold border border-slate-700/60 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Log Out</span>
+          </button>
+        </div>
+
+        <!-- User Watchlist Section -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-bookmark text-blue-500"></i> My Watchlist
+            </h3>
+            <span id="watchlist-count-badge" class="text-xs text-slate-400">0 movies</span>
+          </div>
+
+          <div id="profile-watchlist-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+            <!-- Watchlist cards injected here -->
+          </div>
+        </div>
+
+        <!-- Telegram Support Option Card in Logged In Profile -->
+        <div class="bg-gradient-to-r from-slate-900 to-sky-950/30 border border-sky-800/40 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center text-lg flex-shrink-0">
+              <i class="fa-brands fa-telegram"></i>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-white flex items-center gap-1.5">
+                Need Help or Movie Requests?
+              </h4>
+              <p class="text-xs text-slate-400">Telegram Support: <span class="text-sky-400 font-semibold">@BtwJerry01</span></p>
+            </div>
+          </div>
+          <a href="https://t.me/BtwJerry01" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-md shadow-sky-600/30 flex items-center gap-1.5 transition">
+            <i class="fa-brands fa-telegram"></i>
+            <span>Chat Now</span>
+          </a>
+        </div>
+
+        <!-- Quick Switch to Admin -->
+        <div class="border-t border-slate-800 pt-4 flex flex-col sm:flex-row gap-2">
+          <a href="admin.html" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-semibold text-xs flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-screwdriver-wrench text-blue-400"></i> Open Admin Panel
+          </a>
+          <button onclick="openFirebaseSettingsModal()" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-semibold text-xs flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-database text-yellow-400"></i> Firebase Config
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- PAGE 5: MOVIE DETAILS VIEW (SPA Modal/View) -->
+    <div id="view-movie-details" class="fixed inset-0 z-50 bg-slate-950/95 overflow-y-auto hidden flex flex-col pb-16">
+      <!-- Back Navigation Header -->
+      <div class="sticky top-0 z-30 px-4 py-3 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between">
+        <button onclick="closeMovieDetails()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium border border-slate-700/60 transition">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Back</span>
+        </button>
+        <span class="text-xs font-semibold text-slate-400" id="detail-header-title">Movie Details</span>
+        <button id="detail-share-btn" onclick="shareMovie()" class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700/60 transition" title="Share movie">
+          <i class="fa-solid fa-share-nodes text-xs"></i>
+        </button>
+      </div>
+
+      <div class="max-w-2xl mx-auto w-full px-4 py-4 space-y-6">
+        <!-- Hero Movie Card -->
+        <div class="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-2xl">
+          <div class="relative h-72 sm:h-96 w-full overflow-hidden bg-slate-950">
+            <!-- Defensive poster load -->
+            <img 
+              id="detail-poster-img" 
+              src="" 
+              alt="Movie Poster" 
+              class="w-full h-full object-cover object-center filter brightness-90"
+              onerror="handleImageError(this)"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+            
+            <!-- Floating Quick Play Button -->
+            <button 
+              id="detail-play-floating-btn" 
+              onclick="playCurrentMovie()" 
+              class="absolute inset-0 m-auto w-16 h-16 rounded-full bg-blue-600/90 hover:bg-blue-600 text-white flex items-center justify-center text-2xl shadow-xl shadow-blue-600/50 hover:scale-110 transition backdrop-blur-sm cursor-pointer z-20"
+              title="Watch Now"
+            >
+              <i class="fa-solid fa-play ml-1"></i>
+            </button>
+          </div>
+
+          <!-- Metadata overlay -->
+          <div class="p-5 space-y-4 -mt-16 relative z-10">
+            <div>
+              <div class="flex flex-wrap items-center gap-2 mb-2">
+                <span id="detail-category-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-600/30 text-blue-400 border border-blue-500/30">Action</span>
+                <span id="detail-year" class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300">2024</span>
+                <span id="detail-rating" class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                  <i class="fa-solid fa-star text-[10px]"></i> 8.5
+                </span>
+              </div>
+              <h1 id="detail-title" class="text-2xl sm:text-3xl font-black text-white">Movie Title</h1>
+            </div>
+
+            <!-- Actions Row -->
+            <div class="flex flex-wrap gap-2.5 pt-1">
+              <button 
+                id="detail-watch-btn" 
+                onclick="playCurrentMovie()" 
+                class="flex-1 py-3 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-sm shadow-xl shadow-blue-600/40 flex items-center justify-center gap-2 transition"
+              >
+                <i class="fa-solid fa-play"></i>
+                <span>Watch Now</span>
+              </button>
+
+              <button 
+                id="detail-watchlist-btn" 
+                onclick="toggleWatchlistForCurrent()" 
+                class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 flex items-center justify-center gap-2 transition"
+              >
+                <i id="detail-watchlist-icon" class="fa-regular fa-bookmark"></i>
+                <span id="detail-watchlist-text">Watchlist</span>
+              </button>
+            </div>
+
+            <!-- Description -->
+            <div class="space-y-1.5 pt-2">
+              <h3 class="text-xs uppercase tracking-wider font-bold text-slate-400">Synopsis</h3>
+              <p id="detail-description" class="text-sm text-slate-300 leading-relaxed"></p>
+            </div>
+
+            <!-- Cast -->
+            <div class="space-y-2 pt-2 border-t border-slate-800/80">
+              <h3 class="text-xs uppercase tracking-wider font-bold text-slate-400">Cast & Crew</h3>
+              <div id="detail-cast-container" class="flex flex-wrap gap-1.5">
+                <!-- Cast chips -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- More Like This / Recommended -->
+        <div class="space-y-3 pt-2">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-film text-blue-500"></i> More in this Genre
+          </h3>
+          <div id="detail-related-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <!-- Dynamic related movies -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: EMBEDDED VIDEO PLAYER -->
+    <div id="player-modal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex flex-col justify-center items-center p-2 sm:p-6">
+      <div class="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <!-- Player Header -->
+        <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+            <span id="player-movie-title" class="font-bold text-sm text-white truncate">Now Playing</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="togglePlayerFullscreen()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs transition" title="Fullscreen">
+              <i class="fa-solid fa-expand"></i>
+            </button>
+            <button onclick="closeVideoPlayer()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white flex items-center justify-center text-xs transition" title="Close player">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Video Player Display Container -->
+        <div id="player-viewport" class="relative w-full aspect-video bg-black flex items-center justify-center">
+          <!-- Dynamically injects <video> or <iframe> based on URL -->
+          <div id="player-loading" class="text-center text-slate-400">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2 text-blue-500"></i>
+            <p class="text-xs">Buffering stream...</p>
+          </div>
+        </div>
+
+        <!-- Player Footer Info -->
+        <div class="p-3 bg-slate-950/80 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1.5">
+              <i class="fa-solid fa-link text-blue-500"></i> Direct Web Stream
+            </span>
+            <a href="https://t.me/BtwJerry01" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 transition" title="Report playback issue to support">
+              <i class="fa-brands fa-telegram"></i> Stream Issue? Support
+            </a>
+          </div>
+          <a id="player-direct-url" href="#" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1">
+            <span>Open Source Link</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: FIREBASE CONFIGURATION SETTINGS -->
+    <div id="firebase-settings-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-database text-blue-500"></i>
+            <h3 class="text-sm font-bold text-white">Firebase Realtime Database</h3>
+          </div>
+          <button onclick="closeFirebaseSettingsModal()" class="text-slate-400 hover:text-white text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Movies Hub uses Firebase Realtime Database for real-time synchronization between the mobile app and Admin Panel. If no custom Firebase project is configured, Movies Hub automatically runs in <strong>Local Sync Mode</strong> with full reactivity!
+        </p>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Database Mode</label>
+            <div id="db-active-mode-badge" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-emerald-400 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>Local Storage & Cross-Tab Live Sync Active</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Optional: Firebase Web Config (JSON)</label>
+            <textarea 
+              id="firebase-config-input" 
+              rows="4" 
+              placeholder='{"apiKey": "AIzaSy...", "authDomain": "...", "databaseURL": "https://...firebaseio.com", "projectId": "..."}' 
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-blue-500"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <button onclick="resetToSampleDatabase()" class="text-xs text-rose-400 hover:underline">
+            Reset Sample Catalog
+          </button>
+          <div class="flex gap-2">
+            <button onclick="closeFirebaseSettingsModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-medium">
+              Cancel
+            </button>
+            <button onclick="saveFirebaseConfig()" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md">
+              Save Config
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-xs font-medium bg-slate-800/95 border border-slate-700 text-white shadow-2xl backdrop-blur-md transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-2 flex items-center gap-2">
+      <i id="toast-icon" class="fa-solid fa-circle-check text-blue-500"></i>
+      <span id="toast-msg">Notification</span>
+    </div>
+
+    <!-- FIXED BOTTOM NAVIGATION BAR (Mobile-First, Frosted Glass, Top-side subtle shadow) -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-lg mx-auto md:max-w-3xl lg:max-w-5xl frosted-glass border-t border-slate-800/80 px-2 py-2">
+      <div class="flex items-center justify-around">
+        
+        <!-- Home Tab -->
+        <button onclick="navigateTo('home')" id="nav-btn-home" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-blue-500 transition-colors">
+          <i class="fa-solid fa-house text-lg mb-0.5"></i>
+          <span class="text-[10px] font-bold tracking-tight">Home</span>
+        </button>
+
+        <!-- Search Tab -->
+        <button onclick="navigateTo('search')" id="nav-btn-search" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-200 transition-colors">
+          <i class="fa-solid fa-magnifying-glass text-lg mb-0.5"></i>
+          <span class="text-[10px] font-medium tracking-tight">Search</span>
+        </button>
+
+        <!-- Categories Tab -->
+        <button onclick="navigateTo('categories')" id="nav-btn-categories" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-200 transition-colors">
+          <i class="fa-solid fa-layer-group text-lg mb-0.5"></i>
+          <span class="text-[10px] font-medium tracking-tight">Categories</span>
+        </button>
+
+        <!-- Profile Tab -->
+        <button onclick="navigateTo('profile')" id="nav-btn-profile" class="nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-200 transition-colors relative">
+          <i class="fa-solid fa-user text-lg mb-0.5"></i>
+          <span class="text-[10px] font-medium tracking-tight">Profile</span>
+          <!-- Active user dot -->
+          <span id="nav-profile-dot" class="hidden absolute top-1 right-6 w-2 h-2 rounded-full bg-blue-500"></span>
+        </button>
+
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- APPLICATION SCRIPT -->
+  <script>
+    /**
+     * Movies Hub Movie Streaming Service - Client App
+     * Robust Architecture with URL-Based Media Only, Defensive Checks,
+     * Firebase Realtime Database Integration & Local Sync Fallback.
+     */
+
+    // --- Defensive Checks & Helper Utilities ---
+    const DEFAULT_FALLBACK_POSTER = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=80';
+    const DEFAULT_FALLBACK_BANNER = 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80';
+
+    function isValidString(val) {
+      return val !== null && val !== undefined && typeof val === 'string' && val.trim().length > 0;
+    }
+
+    function safeMovieId(id) {
+      if (!isValidString(id) || id === 'undefined' || id === 'null') {
+        return null;
+      }
+      return String(id).trim();
+    }
+
+    function safeImageUrl(url, fallback = DEFAULT_FALLBACK_POSTER) {
+      if (isValidString(url) && (url.startsWith('http://') || url.startsWith('https://'))) {
+        return url.trim();
+      }
+      return fallback;
+    }
+
+    function safeText(str, fallback = '') {
+      if (str === null || str === undefined) return fallback;
+      return String(str);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function handleImageError(imgElem) {
+      if (imgElem && imgElem.src !== DEFAULT_FALLBACK_POSTER) {
+        imgElem.onerror = null;
+        imgElem.src = DEFAULT_FALLBACK_POSTER;
+      }
+    }
+
+    // --- Initial Seed Catalog (Verified direct image URLs and video streams) ---
+    const INITIAL_CATEGORIES = [
+      { id: 'cat-action', name: 'Action', icon: 'fa-fire', color: 'from-orange-600 to-red-600' },
+      { id: 'cat-scifi', name: 'Sci-Fi', icon: 'fa-rocket', color: 'from-cyan-600 to-blue-600' },
+      { id: 'cat-drama', name: 'Drama', icon: 'fa-masks-theater', color: 'from-amber-600 to-orange-600' },
+      { id: 'cat-thriller', name: 'Thriller', icon: 'fa-skull', color: 'from-purple-600 to-indigo-600' },
+      { id: 'cat-comedy', name: 'Comedy', icon: 'fa-face-laugh-squint', color: 'from-yellow-500 to-amber-600' },
+      { id: 'cat-animation', name: 'Animation', icon: 'fa-wand-magic-sparkles', color: 'from-pink-500 to-rose-600' }
+    ];
+
+    const INITIAL_MOVIES = [
+      {
+        id: 'mov-1',
+        title: 'Inception',
+        year: '2010',
+        posterUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&auto=format&fit=crop&q=80',
+        watchUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+        rating: '8.8',
+        category: 'Sci-Fi',
+        cast: 'Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page, Tom Hardy',
+        description: 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a CEO.'
+      },
+      {
+        id: 'mov-2',
+        title: 'The Dark Knight',
+        year: '2008',
+        posterUrl: 'https://images.unsplash.com/photo-1509281373149-e957c6296406?w=600&auto=format&fit=crop&q=80',
+        watchUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        rating: '9.0',
+        category: 'Action',
+        cast: 'Christian Bale, Heath Ledger, Aaron Eckhart, Michael Caine',
+        description: 'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.'
+      },
+      {
+        id: 'mov-3',
+        title: 'Interstellar',
+        year: '2014',
+        posterUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=80',
+        watchUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+        rating: '8.7',
+        category: 'Sci-Fi',
+        cast: 'Matthew McConaughey, Anne Hathaway, Jessica Chastain, Michael Caine',
+        description: 'When Earth becomes uninhabitable in the future, a farmer and ex-NASA pilot, Joseph Cooper, is tasked to pilot a spacecraft along with a team of researchers to find a new planet for humans.'
+      },
+      {
+        id: 'mov-4',
+        title: 'Dune: Part Two',
+        year: '2024',
+        posterUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
+        watchUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        rating: '8.6',
+        category: 'Sci-Fi',
+        cast: 'Timothée Chalamet, Zendaya, Rebecca Ferguson, Javier Bardem',
+        description: 'Paul Atreides unites with Chani and the Fremen while seeking revenge against the conspirators who destroyed his family.'
+      },
+      {
+        id: 'mov-5',
+        title: 'Gladiator Legacy',
+        year: '2024',
+        posterUrl: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=600&auto=format&fit=crop&q=80',
+        watchUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        rating: '8.4',
+        category: 'Action',
+        cast: 'Paul Mescal, Pedro Pascal, Denzel Washington, Connie Nielsen',
+        description: 'Years after witnessing the death of Maximus at the hands of his uncle, Lucius must enter the Colosseum after the powerful emperors of Rome conquer his home.'
+      },
+      {
+        id: 'mov-6',
+        title: 'Cyberpunk Syndicate',
+        year: '2023',
+        posterUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80',
+        watchUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+        rating: '7.9',
+        category: 'Thriller',
+        cast: 'Alex Rivera, Elena Rostova, Marcus Vance',
+        description: 'In a neon-drenched metropolis controlled by rogue AI conglomerates, an undercover courier discovers a classified chip that threatens the entire digital grid.'
+      },
+      {
+        id: 'mov-7',
+        title: 'The Grand Illusion',
+        year: '2022',
+        posterUrl: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&auto=format&fit=crop&q=80',
+        watchUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        rating: '8.1',
+        category: 'Drama',
+        cast: 'Claire Danes, David Oyelowo, Mark Strong',
+        description: 'A master illusionist orchestrates an impossible escape across European borders during an era of unprecedented political surveillance.'
+      },
+      {
+        id: 'mov-8',
+        title: 'Cosmic Odyssey',
+        year: '2023',
+        posterUrl: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&auto=format&fit=crop&q=80',
+        watchUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+        rating: '8.3',
+        category: 'Animation',
+        cast: 'Tara Strong, John DiMaggio, Alan Tudyk',
+        description: 'An animated interstellar journey of a daring robotic explorer who travels past solar winds to discover remnants of an ancient civilization.'
+      }
+    ];
+
+    const INITIAL_BANNERS = [
+      {
+        id: 'ban-1',
+        imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80',
+        title: 'Interstellar Odyssey',
+        subtitle: 'Journey beyond the stars in stunning 4K HDR',
+        movieId: 'mov-3'
+      },
+      {
+        id: 'ban-2',
+        imageUrl: 'https://images.unsplash.com/photo-1509281373149-e957c6296406?w=1200&auto=format&fit=crop&q=80',
+        title: 'The Dark Knight Returns',
+        subtitle: 'The greatest superhero duel of all time',
+        movieId: 'mov-2'
+      },
+      {
+        id: 'ban-3',
+        imageUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1200&auto=format&fit=crop&q=80',
+        title: 'Mind Bending Thrillers',
+        subtitle: 'Stream Nolan masterpieces only on Movies Hub',
+        movieId: 'mov-1'
+      }
+    ];
+
+    // --- Application State ---
+    let appState = {
+      movies: [],
+      categories: [],
+      banners: [],
+      currentBannerIndex: 0,
+      bannerInterval: null,
+      currentUser: null,
+      watchlist: [],
+      currentMovieForDetail: null,
+      selectedCategoryFilter: null,
+      searchQuery: '',
+      activePage: 'home',
+      firebaseInitialized: false,
+      firebaseDb: null,
+      firebaseAuth: null
+    };
+
+    // --- Realtime Sync Layer (Firebase + Local Storage Bridge) ---
+    function initDatabase() {
+      // 1. Load from localStorage if present
+      const storedMovies = localStorage.getItem('kjerry_movies');
+      const storedCats = localStorage.getItem('kjerry_categories');
+      const storedBanners = localStorage.getItem('kjerry_banners');
+      const storedWatchlist = localStorage.getItem('kjerry_watchlist');
+      const storedUser = localStorage.getItem('kjerry_user');
+
+      appState.movies = storedMovies ? JSON.parse(storedMovies) : INITIAL_MOVIES;
+      appState.categories = storedCats ? JSON.parse(storedCats) : INITIAL_CATEGORIES;
+      appState.banners = storedBanners ? JSON.parse(storedBanners) : INITIAL_BANNERS;
+      appState.watchlist = storedWatchlist ? JSON.parse(storedWatchlist) : ['mov-1', 'mov-3'];
+      appState.currentUser = storedUser ? JSON.parse(storedUser) : null;
+
+      // 2. Try Firebase initialization if config exists
+      setupFirebaseIfConfigured();
+
+      // 3. Listen to cross-tab updates (e.g. when Admin changes something in another tab!)
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'kjerry_movies' && e.newValue) {
+          appState.movies = JSON.parse(e.newValue);
+          renderAll();
+        }
+        if (e.key === 'kjerry_categories' && e.newValue) {
+          appState.categories = JSON.parse(e.newValue);
+          renderAll();
+        }
+        if (e.key === 'kjerry_banners' && e.newValue) {
+          appState.banners = JSON.parse(e.newValue);
+          renderBannerCarousel();
+        }
+      });
+    }
+
+    function setupFirebaseIfConfigured() {
+      const configStr = localStorage.getItem('kjerry_firebase_config');
+      const statusDot = document.getElementById('fb-status-dot');
+      const statusText = document.getElementById('fb-status-text');
+
+      if (configStr) {
+        try {
+          const config = JSON.parse(configStr);
+          if (config && config.apiKey && !firebase.apps.length) {
+            firebase.initializeApp(config);
+            appState.firebaseInitialized = true;
+            appState.firebaseDb = firebase.database();
+            appState.firebaseAuth = firebase.auth();
+
+            // Setup listeners for movies, categories, banners
+            appState.firebaseDb.ref('movies').on('value', (snapshot) => {
+              const val = snapshot.val();
+              if (val) {
+                appState.movies = Object.values(val);
+                localStorage.setItem('kjerry_movies', JSON.stringify(appState.movies));
+                renderAll();
+              }
+            });
+
+            appState.firebaseDb.ref('categories').on('value', (snapshot) => {
+              const val = snapshot.val();
+              if (val) {
+                appState.categories = Object.values(val);
+                localStorage.setItem('kjerry_categories', JSON.stringify(appState.categories));
+                renderAll();
+              }
+            });
+
+            appState.firebaseDb.ref('banners').on('value', (snapshot) => {
+              const val = snapshot.val();
+              if (val) {
+                appState.banners = Object.values(val);
+                localStorage.setItem('kjerry_banners', JSON.stringify(appState.banners));
+                renderBannerCarousel();
+              }
+            });
+
+            // Listen to auth
+            appState.firebaseAuth.onAuthStateChanged((user) => {
+              if (user) {
+                appState.currentUser = { email: user.email, uid: user.uid };
+                localStorage.setItem('kjerry_user', JSON.stringify(appState.currentUser));
+              } else if (!localStorage.getItem('kjerry_user')) {
+                appState.currentUser = null;
+              }
+              renderProfilePage();
+            });
+
+            if (statusDot && statusText) {
+              statusDot.className = 'w-2 h-2 rounded-full bg-blue-500 animate-pulse';
+              statusText.textContent = 'Firebase DB';
+            }
+            return;
+          }
+        } catch (err) {
+          console.warn('Firebase config error, running in Local Sync mode:', err);
+        }
+      }
+
+      // Default: Local Sync Mode
+      if (statusDot && statusText) {
+        statusDot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+        statusText.textContent = 'Live Local Sync';
+      }
+    }
+
+    function saveLocalData() {
+      localStorage.setItem('kjerry_movies', JSON.stringify(appState.movies));
+      localStorage.setItem('kjerry_categories', JSON.stringify(appState.categories));
+      localStorage.setItem('kjerry_banners', JSON.stringify(appState.banners));
+      localStorage.setItem('kjerry_watchlist', JSON.stringify(appState.watchlist));
+    }
+
+    // --- Navigation (SPA Single Page Application) ---
+    function navigateTo(pageId) {
+      if (!isValidString(pageId)) return;
+      appState.activePage = pageId;
+
+      // Hide all pages
+      document.querySelectorAll('.page-view').forEach(p => p.classList.add('hidden'));
+
+      // Show selected page
+      const targetPage = document.getElementById(`page-${pageId}`);
+      if (targetPage) {
+        targetPage.classList.remove('hidden');
+      }
+
+      // Update bottom nav styles
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-blue-500');
+        btn.classList.add('text-slate-400');
+        const icon = btn.querySelector('i');
+        const span = btn.querySelector('span');
+        if (span) span.className = 'text-[10px] font-medium tracking-tight';
+      });
+
+      const activeBtn = document.getElementById(`nav-btn-${pageId}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-slate-400');
+        activeBtn.classList.add('text-blue-500');
+        const span = activeBtn.querySelector('span');
+        if (span) span.className = 'text-[10px] font-bold tracking-tight';
+      }
+
+      // Special re-render triggers
+      if (pageId === 'search') {
+        const input = document.getElementById('search-input');
+        if (input) input.focus();
+        renderSearchPage();
+      } else if (pageId === 'categories') {
+        renderCategoriesPage();
+      } else if (pageId === 'profile') {
+        renderProfilePage();
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- Home Page Rendering ---
+    function renderBannerCarousel() {
+      const container = document.getElementById('banner-carousel-container');
+      const indicators = document.getElementById('banner-indicators');
+      if (!container || !indicators) return;
+
+      const banners = appState.banners || [];
+      if (banners.length === 0) {
+        container.innerHTML = `
+          <div class="h-full flex items-center justify-center bg-slate-900 text-slate-400 p-4 text-center">
+            <p class="text-sm">No active banners. Add some from the Admin Panel!</p>
+          </div>
+        `;
+        indicators.innerHTML = '';
+        return;
+      }
+
+      if (appState.currentBannerIndex >= banners.length) {
+        appState.currentBannerIndex = 0;
+      }
+
+      container.innerHTML = banners.map((b, idx) => {
+        const isActive = idx === appState.currentBannerIndex;
+        const bannerUrl = safeImageUrl(b.imageUrl, DEFAULT_FALLBACK_BANNER);
+        const title = escapeHtml(b.title || 'Featured Film');
+        const subtitle = escapeHtml(b.subtitle || 'Now Streaming');
+        const movieId = safeMovieId(b.movieId);
+
+        return `
+          <div class="carousel-item absolute inset-0 w-full h-full ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}">
+            <img 
+              src="${escapeHtml(bannerUrl)}" 
+              alt="${title}" 
+              class="w-full h-full object-cover object-center filter brightness-90 transform ${isActive ? 'scale-100' : 'scale-105'} transition-all duration-700" 
+              onerror="this.onerror=null; this.src='${DEFAULT_FALLBACK_BANNER}'"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+            <div class="absolute bottom-4 left-4 right-4 z-20 space-y-1">
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-600 text-white shadow">Featured</span>
+              <h2 class="text-xl sm:text-2xl font-black text-white drop-shadow-md truncate">${title}</h2>
+              <p class="text-xs text-slate-300 drop-shadow line-clamp-1">${subtitle}</p>
+              <div class="pt-2 flex items-center gap-2">
+                ${movieId ? `
+                  <button onclick="openMovieDetails('${escapeHtml(movieId)}')" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-blue-600/40 transition">
+                    <i class="fa-solid fa-play text-[10px]"></i> Watch Now
+                  </button>
+                  <button onclick="openMovieDetails('${escapeHtml(movieId)}')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-white text-xs font-semibold backdrop-blur-sm transition">
+                    Details
+                  </button>
+                ` : `
+                  <button onclick="navigateTo('search')" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 transition">
+                    Browse Movies
+                  </button>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Indicators
+      indicators.innerHTML = banners.map((_, idx) => `
+        <button 
+          onclick="setBannerIndex(${idx})" 
+          class="w-2 h-2 rounded-full transition-all ${idx === appState.currentBannerIndex ? 'w-6 bg-blue-500' : 'bg-slate-600/70 hover:bg-slate-400'}"
+          title="Slide ${idx + 1}"
+        ></button>
+      `).join('');
+
+      // Setup auto-sliding timer
+      if (!appState.bannerInterval) {
+        appState.bannerInterval = setInterval(() => {
+          nextBanner();
+        }, 4500);
+      }
+    }
+
+    function nextBanner() {
+      if (appState.banners.length === 0) return;
+      appState.currentBannerIndex = (appState.currentBannerIndex + 1) % appState.banners.length;
+      renderBannerCarousel();
+    }
+
+    function prevBanner() {
+      if (appState.banners.length === 0) return;
+      appState.currentBannerIndex = (appState.currentBannerIndex - 1 + appState.banners.length) % appState.banners.length;
+      renderBannerCarousel();
+    }
+
+    function setBannerIndex(idx) {
+      appState.currentBannerIndex = idx;
+      renderBannerCarousel();
+    }
+
+    function renderHomeCategoryPills() {
+      const container = document.getElementById('home-category-pills');
+      if (!container) return;
+
+      const categories = appState.categories || [];
+      container.innerHTML = `
+        <button onclick="filterByQuickCategory(null)" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${appState.selectedCategoryFilter === null ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+          All Movies
+        </button>
+        ${categories.map(cat => `
+          <button onclick="filterByQuickCategory('${escapeHtml(cat.name)}')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${appState.selectedCategoryFilter === cat.name ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+            <i class="fa-solid ${escapeHtml(cat.icon || 'fa-film')} mr-1.5 text-blue-400"></i>${escapeHtml(cat.name)}
+          </button>
+        `).join('')}
+      `;
+    }
+
+    function filterByQuickCategory(catName) {
+      appState.selectedCategoryFilter = catName;
+      renderHomeCategoryPills();
+      renderMovieCarousels();
+    }
+
+    function renderMovieCarousels() {
+      const container = document.getElementById('movie-carousels-container');
+      if (!container) return;
+
+      const movies = appState.movies || [];
+      if (movies.length === 0) {
+        container.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center space-y-3">
+            <i class="fa-solid fa-film text-3xl text-slate-600"></i>
+            <h3 class="text-base font-bold text-white">No Movies in Catalog Yet</h3>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto">Open the Admin Panel to add movies using direct image and video URLs, or reset sample data.</p>
+            <div class="pt-2 flex justify-center gap-3">
+              <a href="admin.html" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition">
+                Open Admin Panel
+              </a>
+              <button onclick="resetToSampleDatabase()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">
+                Load Sample Catalog
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // If user filtered by a specific category on Home:
+      if (appState.selectedCategoryFilter) {
+        const filtered = movies.filter(m => String(m.category).toLowerCase() === appState.selectedCategoryFilter.toLowerCase());
+        container.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="w-1.5 h-4 bg-blue-500 rounded-full"></span>
+                <span>${escapeHtml(appState.selectedCategoryFilter)} Movies</span>
+                <span class="text-xs text-slate-500">(${filtered.length})</span>
+              </h2>
+              <button onclick="filterByQuickCategory(null)" class="text-xs text-blue-400 hover:underline">Show All</button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+              ${filtered.map(m => createMovieCardHtml(m)).join('')}
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // Default: Categorized horizontal carousels!
+      let html = '';
+
+      // 1. Trending Blockbusters Row
+      const trending = [...movies].sort((a, b) => parseFloat(b.rating || 0) - parseFloat(a.rating || 0));
+      html += createCarouselSection('Trending Blockbusters', 'fa-fire text-amber-500', trending);
+
+      // 2. Row for each category with movies
+      const categories = appState.categories || [];
+      categories.forEach(cat => {
+        const catMovies = movies.filter(m => String(m.category).toLowerCase() === String(cat.name).toLowerCase());
+        if (catMovies.length > 0) {
+          html += createCarouselSection(cat.name, `${cat.icon || 'fa-film'} text-blue-400`, catMovies);
+        }
+      });
+
+      // 3. Fallback row for newly added
+      html += createCarouselSection('Recently Added', 'fa-clock text-emerald-400', movies.slice().reverse());
+
+      container.innerHTML = html;
+    }
+
+    function createCarouselSection(title, iconClass, movieList) {
+      if (!movieList || movieList.length === 0) return '';
+      const sectionId = 'carousel-' + Math.random().toString(36).substring(2, 8);
+
+      return `
+        <section class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid ${iconClass} text-xs"></i>
+              <span>${escapeHtml(title)}</span>
+            </h2>
+            <div class="flex items-center gap-1.5">
+              <button onclick="scrollCarousel('${sectionId}', -240)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button onclick="scrollCarousel('${sectionId}', 240)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="${sectionId}" class="flex gap-3 sm:gap-4 overflow-x-auto hide-scrollbar pb-2 scroll-smooth">
+            ${movieList.map(m => createMovieCardHorizontalHtml(m)).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    function scrollCarousel(elemId, offset) {
+      const el = document.getElementById(elemId);
+      if (el) {
+        el.scrollBy({ left: offset, behavior: 'smooth' });
+      }
+    }
+
+    function createMovieCardHorizontalHtml(movie) {
+      if (!movie) return '';
+      const movieId = safeMovieId(movie.id);
+      if (!movieId) return '';
+
+      const poster = safeImageUrl(movie.posterUrl, DEFAULT_FALLBACK_POSTER);
+      const title = escapeHtml(movie.title || 'Untitled');
+      const year = escapeHtml(movie.year || '2024');
+      const rating = escapeHtml(movie.rating || 'N/A');
+      const category = escapeHtml(movie.category || 'Film');
+
+      return `
+        <div onclick="openMovieDetails('${escapeHtml(movieId)}')" class="flex-shrink-0 w-36 sm:w-44 group cursor-pointer">
+          <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-slate-900 border border-slate-800 poster-glow transition-all duration-300 group-hover:scale-105 group-hover:border-blue-500/50 shadow-lg">
+            <img 
+              src="${escapeHtml(poster)}" 
+              alt="${title}" 
+              loading="lazy"
+              class="w-full h-full object-cover object-center filter brightness-95" 
+              onerror="handleImageError(this)"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80 group-hover:opacity-95 transition-opacity"></div>
+            
+            <!-- Rating Badge -->
+            <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-bold text-amber-400 flex items-center gap-1 border border-amber-500/30">
+              <i class="fa-solid fa-star text-[8px]"></i> ${rating}
+            </div>
+
+            <!-- Play button hover overlay -->
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/50 transform scale-75 group-hover:scale-100 transition-transform">
+                <i class="fa-solid fa-play ml-0.5 text-xs"></i>
+              </div>
+            </div>
+
+            <div class="absolute bottom-2 left-2 right-2">
+              <span class="text-[9px] uppercase tracking-wider font-semibold text-blue-400 block">${category}</span>
+              <h3 class="text-xs font-bold text-white truncate">${title}</h3>
+              <p class="text-[10px] text-slate-400">${year}</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function createMovieCardHtml(movie, index = 0, isStaggered = false) {
+      if (!movie) return '';
+      const movieId = safeMovieId(movie.id);
+      if (!movieId) return '';
+
+      const poster = safeImageUrl(movie.posterUrl, DEFAULT_FALLBACK_POSTER);
+      const title = escapeHtml(movie.title || 'Untitled');
+      const year = escapeHtml(movie.year || '2024');
+      const rating = escapeHtml(movie.rating || 'N/A');
+      const category = escapeHtml(movie.category || 'Movie');
+
+      const staggerClass = isStaggered ? 'stagger-card' : '';
+      const staggerStyle = isStaggered ? `style="animation-delay: ${Math.min(index * 45, 450)}ms;"` : '';
+
+      return `
+        <div onclick="openMovieDetails('${escapeHtml(movieId)}')" class="group cursor-pointer ${staggerClass}" ${staggerStyle}>
+          <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-slate-900 border border-slate-800 poster-glow transition-all duration-300 group-hover:scale-[1.03] group-hover:border-blue-500/50 shadow-md">
+            <img 
+              src="${escapeHtml(poster)}" 
+              alt="${title}" 
+              loading="lazy"
+              class="w-full h-full object-cover object-center filter brightness-95" 
+              onerror="handleImageError(this)"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
+            
+            <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-bold text-amber-400 flex items-center gap-1 border border-amber-500/30">
+              <i class="fa-solid fa-star text-[8px]"></i> ${rating}
+            </div>
+
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/50">
+                <i class="fa-solid fa-play ml-0.5 text-xs"></i>
+              </div>
+            </div>
+
+            <div class="absolute bottom-2.5 left-2.5 right-2.5">
+              <span class="text-[9px] uppercase tracking-wider font-semibold text-blue-400 block">${category}</span>
+              <h3 class="text-xs font-bold text-white truncate">${title}</h3>
+              <p class="text-[10px] text-slate-400">${year}</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- Search Page Functions ---
+    let searchDebounceTimer = null;
+
+    function renderSearchPage() {
+      renderSearchFilters();
+      executeSearch();
+    }
+
+    function renderSearchFilters() {
+      const container = document.getElementById('search-category-filters');
+      if (!container) return;
+
+      const categories = appState.categories || [];
+      container.innerHTML = `
+        <button onclick="setSearchCategoryFilter(null)" class="px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition ${appState.selectedCategoryFilter === null ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}">
+          All
+        </button>
+        ${categories.map(c => `
+          <button onclick="setSearchCategoryFilter('${escapeHtml(c.name)}')" class="px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition ${appState.selectedCategoryFilter === c.name ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}">
+            ${escapeHtml(c.name)}
+          </button>
+        `).join('')}
+      `;
+    }
+
+    function setSearchCategoryFilter(cat) {
+      appState.selectedCategoryFilter = cat;
+      renderSearchFilters();
+      executeSearch();
+    }
+
+    function handleSearchInput(val) {
+      appState.searchQuery = val || '';
+      const clearBtn = document.getElementById('search-clear-btn');
+      if (clearBtn) {
+        if (appState.searchQuery.length > 0) {
+          clearBtn.classList.remove('hidden');
+        } else {
+          clearBtn.classList.add('hidden');
+        }
+      }
+      
+      // Debounce slightly to create smooth, responsive staggered entrance
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        executeSearch();
+      }, 90);
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('search-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      appState.searchQuery = '';
+      const clearBtn = document.getElementById('search-clear-btn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      executeSearch();
+    }
+
+    function executeSearch() {
+      const grid = document.getElementById('search-grid');
+      const countLabel = document.getElementById('search-results-count');
+      if (!grid) return;
+
+      let list = appState.movies || [];
+      const q = appState.searchQuery.trim().toLowerCase();
+
+      if (q.length > 0) {
+        list = list.filter(m => {
+          const title = (m.title || '').toLowerCase();
+          const cast = (m.cast || '').toLowerCase();
+          const desc = (m.description || '').toLowerCase();
+          const cat = (m.category || '').toLowerCase();
+          return title.includes(q) || cast.includes(q) || desc.includes(q) || cat.includes(q);
+        });
+      }
+
+      if (appState.selectedCategoryFilter) {
+        list = list.filter(m => String(m.category).toLowerCase() === appState.selectedCategoryFilter.toLowerCase());
+      }
+
+      if (countLabel) {
+        countLabel.textContent = `${list.length} ${list.length === 1 ? 'Movie' : 'Movies'} Found`;
+      }
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-500 space-y-3">
+            <i class="fa-solid fa-film text-3xl"></i>
+            <p class="text-sm">No movies match "${escapeHtml(q || 'your filter')}"</p>
+            <p class="text-xs text-slate-500">Try searching for other keywords like "Action", "Inception", or "Sci-Fi".</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Render cards with staggered animation
+      grid.innerHTML = list.map((m, idx) => createMovieCardHtml(m, idx, true)).join('');
+    }
+
+    // --- Categories Page Functions ---
+    function renderCategoriesPage() {
+      const grid = document.getElementById('categories-grid');
+      const selectedView = document.getElementById('category-selected-movies-container');
+      if (!grid) return;
+
+      if (selectedView) selectedView.classList.add('hidden');
+
+      const categories = appState.categories || [];
+      const movies = appState.movies || [];
+
+      grid.innerHTML = categories.map(cat => {
+        const count = movies.filter(m => String(m.category).toLowerCase() === String(cat.name).toLowerCase()).length;
+        const colorClass = cat.color || 'from-blue-600 to-indigo-700';
+
+        return `
+          <div 
+            onclick="selectCategoryDetail('${escapeHtml(cat.name)}')" 
+            class="relative rounded-2xl p-4 bg-gradient-to-br ${colorClass} text-white shadow-xl hover:scale-[1.02] active:scale-95 transition cursor-pointer overflow-hidden group min-h-[100px] flex flex-col justify-between"
+          >
+            <div class="flex items-center justify-between">
+              <span class="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-sm">
+                <i class="fa-solid ${escapeHtml(cat.icon || 'fa-film')}"></i>
+              </span>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-black/25">${count} films</span>
+            </div>
+            <div>
+              <h3 class="text-base font-black tracking-wide">${escapeHtml(cat.name)}</h3>
+              <p class="text-[10px] text-white/80">Explore collection <i class="fa-solid fa-arrow-right ml-0.5 text-[9px] group-hover:translate-x-1 transition-transform"></i></p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectCategoryDetail(catName) {
+      const selectedView = document.getElementById('category-selected-movies-container');
+      const selectedTitle = document.getElementById('category-selected-title');
+      const selectedGrid = document.getElementById('category-selected-grid');
+
+      if (!selectedView || !selectedTitle || !selectedGrid) return;
+
+      const movies = (appState.movies || []).filter(m => String(m.category).toLowerCase() === catName.toLowerCase());
+
+      selectedTitle.innerHTML = `<i class="fa-solid fa-film mr-2 text-blue-500"></i>${escapeHtml(catName)} (${movies.length})`;
+      selectedView.classList.remove('hidden');
+
+      if (movies.length === 0) {
+        selectedGrid.innerHTML = `
+          <div class="col-span-full py-8 text-center text-slate-500 text-xs">
+            No movies in this category yet.
+          </div>
+        `;
+      } else {
+        selectedGrid.innerHTML = movies.map((m, idx) => createMovieCardHtml(m, idx, true)).join('');
+      }
+
+      selectedView.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function clearSelectedCategory() {
+      const selectedView = document.getElementById('category-selected-movies-container');
+      if (selectedView) selectedView.classList.add('hidden');
+    }
+
+    // --- Profile & Authentication Functions ---
+    function renderProfilePage() {
+      const loggedOutView = document.getElementById('profile-logged-out');
+      const loggedInView = document.getElementById('profile-logged-in');
+      const userDot = document.getElementById('nav-profile-dot');
+
+      if (!loggedOutView || !loggedInView) return;
+
+      if (appState.currentUser) {
+        loggedOutView.classList.add('hidden');
+        loggedInView.classList.remove('hidden');
+        if (userDot) userDot.classList.remove('hidden');
+
+        // Populate user details
+        const emailDisplay = document.getElementById('user-email-display');
+        const userAvatar = document.getElementById('user-avatar');
+        if (emailDisplay) emailDisplay.textContent = appState.currentUser.email || 'KJerry Member';
+        if (userAvatar) {
+          const initial = (appState.currentUser.email || 'U')[0].toUpperCase();
+          userAvatar.textContent = initial;
+        }
+
+        renderWatchlist();
+      } else {
+        loggedOutView.classList.remove('hidden');
+        loggedInView.classList.add('hidden');
+        if (userDot) userDot.classList.add('hidden');
+      }
+    }
+
+    let authMode = 'signin';
+    function switchAuthTab(mode) {
+      authMode = mode;
+      const tabSignIn = document.getElementById('auth-tab-signin');
+      const tabSignUp = document.getElementById('auth-tab-signup');
+      const btnText = document.getElementById('auth-submit-btn-text');
+
+      if (mode === 'signin') {
+        tabSignIn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white transition';
+        tabSignUp.className = 'flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        if (btnText) btnText.textContent = 'Sign In';
+      } else {
+        tabSignUp.className = 'flex-1 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white transition';
+        tabSignIn.className = 'flex-1 py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition';
+        if (btnText) btnText.textContent = 'Create Account';
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const emailInput = document.getElementById('auth-email');
+      const passInput = document.getElementById('auth-password');
+      const errBox = document.getElementById('auth-error-msg');
+      const errText = document.getElementById('auth-error-text');
+
+      const email = emailInput ? emailInput.value.trim() : '';
+      const pass = passInput ? passInput.value : '';
+
+      if (!email || !pass) return;
+
+      try {
+        if (appState.firebaseAuth) {
+          if (authMode === 'signin') {
+            await appState.firebaseAuth.signInWithEmailAndPassword(email, pass);
+          } else {
+            await appState.firebaseAuth.createUserWithEmailAndPassword(email, pass);
+          }
+        } else {
+          // Local Auth Fallback
+          appState.currentUser = { email: email, uid: 'local-' + Date.now() };
+          localStorage.setItem('kjerry_user', JSON.stringify(appState.currentUser));
+        }
+
+        showToast(authMode === 'signin' ? 'Signed in successfully!' : 'Account created!', 'success');
+        if (errBox) errBox.classList.add('hidden');
+        renderProfilePage();
+      } catch (err) {
+        console.error('Auth error:', err);
+        if (errBox && errText) {
+          errText.textContent = err.message || 'Authentication failed. Please check credentials.';
+          errBox.classList.remove('hidden');
+        }
+      }
+    }
+
+    function fillDemoAccount() {
+      const emailInput = document.getElementById('auth-email');
+      const passInput = document.getElementById('auth-password');
+      if (emailInput) emailInput.value = 'viewer@movieshub.stream';
+      if (passInput) passInput.value = 'MoviesHub2026!';
+      showToast('Demo credentials filled! Click Sign In', 'info');
+    }
+
+    async function handleLogout() {
+      try {
+        if (appState.firebaseAuth) {
+          await appState.firebaseAuth.signOut();
+        }
+      } catch (e) {
+        console.warn('Sign out warning:', e);
+      }
+      appState.currentUser = null;
+      localStorage.removeItem('kjerry_user');
+      showToast('Signed out successfully', 'info');
+      renderProfilePage();
+    }
+
+    function renderWatchlist() {
+      const container = document.getElementById('profile-watchlist-container');
+      const badge = document.getElementById('watchlist-count-badge');
+      if (!container) return;
+
+      const movies = appState.movies || [];
+      const userWatchlist = appState.watchlist || [];
+      const savedMovies = movies.filter(m => userWatchlist.includes(m.id));
+
+      if (badge) badge.textContent = `${savedMovies.length} saved`;
+
+      if (savedMovies.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-8 text-center text-slate-500 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
+            <i class="fa-regular fa-bookmark text-xl text-slate-600"></i>
+            <p class="text-xs">Your watchlist is empty.</p>
+            <p class="text-[10px] text-slate-500">Add movies using the bookmark button on any movie details page.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = savedMovies.map(m => createMovieCardHtml(m)).join('');
+    }
+
+    // --- Movie Details Page Functions ---
+    function openMovieDetails(movieId) {
+      const safeId = safeMovieId(movieId);
+      if (!safeId) {
+        showToast('Invalid movie reference', 'error');
+        return;
+      }
+
+      const movie = (appState.movies || []).find(m => String(m.id) === safeId);
+      if (!movie) {
+        showToast('Movie not found', 'error');
+        return;
+      }
+
+      appState.currentMovieForDetail = movie;
+
+      // Populate elements
+      const posterImg = document.getElementById('detail-poster-img');
+      const titleElem = document.getElementById('detail-title');
+      const headerTitle = document.getElementById('detail-header-title');
+      const yearElem = document.getElementById('detail-year');
+      const ratingElem = document.getElementById('detail-rating');
+      const catBadge = document.getElementById('detail-category-badge');
+      const descElem = document.getElementById('detail-description');
+      const castContainer = document.getElementById('detail-cast-container');
+      const relatedGrid = document.getElementById('detail-related-grid');
+
+      if (posterImg) {
+        posterImg.src = safeImageUrl(movie.posterUrl, DEFAULT_FALLBACK_POSTER);
+      }
+      if (titleElem) titleElem.textContent = movie.title || 'Untitled';
+      if (headerTitle) headerTitle.textContent = movie.title || 'Movie Details';
+      if (yearElem) yearElem.textContent = movie.year || '2024';
+      if (ratingElem) ratingElem.innerHTML = `<i class="fa-solid fa-star text-[10px]"></i> ${escapeHtml(movie.rating || 'N/A')}`;
+      if (catBadge) catBadge.textContent = movie.category || 'Movie';
+      if (descElem) descElem.textContent = movie.description || 'No plot summary available.';
+
+      // Cast chips
+      if (castContainer) {
+        const castList = (movie.cast || '').split(',').map(c => c.trim()).filter(Boolean);
+        if (castList.length === 0) {
+          castContainer.innerHTML = `<span class="text-xs text-slate-500">Not specified</span>`;
+        } else {
+          castContainer.innerHTML = castList.map(actor => `
+            <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700/60">
+              <i class="fa-regular fa-user mr-1 text-[10px] text-blue-400"></i>${escapeHtml(actor)}
+            </span>
+          `).join('');
+        }
+      }
+
+      // Update Watchlist Button state
+      updateDetailWatchlistButton();
+
+      // Related movies in same category
+      if (relatedGrid) {
+        const related = (appState.movies || []).filter(m => m.id !== movie.id && String(m.category).toLowerCase() === String(movie.category).toLowerCase()).slice(0, 3);
+        if (related.length === 0) {
+          relatedGrid.innerHTML = `<div class="col-span-full py-4 text-xs text-slate-500">No other movies in this category.</div>`;
+        } else {
+          relatedGrid.innerHTML = related.map(m => createMovieCardHtml(m)).join('');
+        }
+      }
+
+      // Show Details View
+      const detailsModal = document.getElementById('view-movie-details');
+      if (detailsModal) {
+        detailsModal.classList.remove('hidden');
+        detailsModal.scrollTop = 0;
+      }
+    }
+
+    function closeMovieDetails() {
+      const detailsModal = document.getElementById('view-movie-details');
+      if (detailsModal) {
+        detailsModal.classList.add('hidden');
+      }
+      appState.currentMovieForDetail = null;
+    }
+
+    function updateDetailWatchlistButton() {
+      const icon = document.getElementById('detail-watchlist-icon');
+      const text = document.getElementById('detail-watchlist-text');
+      const btn = document.getElementById('detail-watchlist-btn');
+      if (!icon || !text || !btn || !appState.currentMovieForDetail) return;
+
+      const isSaved = (appState.watchlist || []).includes(appState.currentMovieForDetail.id);
+      if (isSaved) {
+        icon.className = 'fa-solid fa-bookmark text-blue-500';
+        text.textContent = 'Saved in List';
+        btn.classList.add('border-blue-500/50', 'bg-blue-600/10');
+      } else {
+        icon.className = 'fa-regular fa-bookmark';
+        text.textContent = 'Add to List';
+        btn.classList.remove('border-blue-500/50', 'bg-blue-600/10');
+      }
+    }
+
+    function toggleWatchlistForCurrent() {
+      if (!appState.currentMovieForDetail) return;
+      const id = appState.currentMovieForDetail.id;
+
+      if (!appState.watchlist) appState.watchlist = [];
+
+      const idx = appState.watchlist.indexOf(id);
+      if (idx > -1) {
+        appState.watchlist.splice(idx, 1);
+        showToast('Removed from Watchlist', 'info');
+      } else {
+        appState.watchlist.push(id);
+        showToast('Added to Watchlist!', 'success');
+      }
+
+      saveLocalData();
+      updateDetailWatchlistButton();
+      renderWatchlist();
+    }
+
+    function shareMovie() {
+      if (!appState.currentMovieForDetail) return;
+      if (navigator.share) {
+        navigator.share({
+          title: `Watch ${appState.currentMovieForDetail.title} on Movies Hub`,
+          text: appState.currentMovieForDetail.description,
+          url: window.location.href
+        }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(window.location.href);
+        showToast('Movie link copied to clipboard!', 'info');
+      }
+    }
+
+    // --- Embedded Video Player Modal ---
+    function playCurrentMovie() {
+      const movie = appState.currentMovieForDetail;
+      if (!movie) return;
+
+      const watchUrl = movie.watchUrl;
+      if (!isValidString(watchUrl)) {
+        showToast('Stream link not available for this movie', 'error');
+        return;
+      }
+
+      const modal = document.getElementById('player-modal');
+      const titleElem = document.getElementById('player-movie-title');
+      const directUrlElem = document.getElementById('player-direct-url');
+      const viewport = document.getElementById('player-viewport');
+
+      if (!modal || !viewport) return;
+
+      if (titleElem) titleElem.textContent = movie.title || 'Now Playing';
+      if (directUrlElem) {
+        directUrlElem.href = watchUrl;
+      }
+
+      // Check URL format: If YouTube / Vimeo / Embed iframe vs Direct MP4/WebM video
+      const lower = watchUrl.toLowerCase();
+      if (lower.includes('youtube.com') || lower.includes('youtu.be') || lower.includes('vimeo.com') || lower.includes('embed')) {
+        let embedUrl = watchUrl;
+        if (lower.includes('watch?v=')) {
+          const videoId = watchUrl.split('watch?v=')[1]?.split('&')[0];
+          embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        } else if (lower.includes('youtu.be/')) {
+          const videoId = watchUrl.split('youtu.be/')[1]?.split('?')[0];
+          embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        }
+
+        viewport.innerHTML = `
+          <iframe 
+            src="${escapeHtml(embedUrl)}" 
+            title="${escapeHtml(movie.title)}" 
+            class="w-full h-full rounded-b-xl border-0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen
+          ></iframe>
+        `;
+      } else {
+        // Direct Video Stream (MP4, WebM, HLS)
+        viewport.innerHTML = `
+          <video 
+            id="active-video-element" 
+            src="${escapeHtml(watchUrl)}" 
+            controls 
+            autoplay 
+            playsinline 
+            class="w-full h-full rounded-b-xl object-contain bg-black"
+          >
+            Your browser does not support the video tag.
+          </video>
+        `;
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeVideoPlayer() {
+      const modal = document.getElementById('player-modal');
+      const viewport = document.getElementById('player-viewport');
+      if (modal) modal.classList.add('hidden');
+      if (viewport) {
+        // Stop playback and remove element to prevent background audio
+        const video = viewport.querySelector('video');
+        if (video) {
+          video.pause();
+          video.src = '';
+        }
+        viewport.innerHTML = '';
+      }
+    }
+
+    function togglePlayerFullscreen() {
+      const modal = document.getElementById('player-modal');
+      if (!modal) return;
+      if (!document.fullscreenElement) {
+        modal.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    // --- Firebase Settings & Reset Utilities ---
+    function openFirebaseSettingsModal() {
+      const modal = document.getElementById('firebase-settings-modal');
+      const input = document.getElementById('firebase-config-input');
+      const badge = document.getElementById('db-active-mode-badge');
+
+      if (input) {
+        input.value = localStorage.getItem('kjerry_firebase_config') || '';
+      }
+
+      if (badge) {
+        if (appState.firebaseInitialized) {
+          badge.className = 'px-3 py-2 rounded-xl bg-slate-950 border border-blue-500/40 text-xs text-blue-400 flex items-center gap-2';
+          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Firebase Realtime Database Active`;
+        } else {
+          badge.className = 'px-3 py-2 rounded-xl bg-slate-950 border border-emerald-500/40 text-xs text-emerald-400 flex items-center gap-2';
+          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Local Storage & Cross-Tab Live Sync Active`;
+        }
+      }
+
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeFirebaseSettingsModal() {
+      const modal = document.getElementById('firebase-settings-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function saveFirebaseConfig() {
+      const input = document.getElementById('firebase-config-input');
+      const val = input ? input.value.trim() : '';
+
+      if (val) {
+        try {
+          JSON.parse(val);
+          localStorage.setItem('kjerry_firebase_config', val);
+          showToast('Firebase configuration saved! Reloading...', 'success');
+          setTimeout(() => window.location.reload(), 1000);
+        } catch (e) {
+          showToast('Invalid JSON format for Firebase config', 'error');
+        }
+      } else {
+        localStorage.removeItem('kjerry_firebase_config');
+        showToast('Switched to Local Sync mode. Reloading...', 'info');
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    }
+
+    function resetToSampleDatabase() {
+      if (confirm('Reset catalog to verified default sample movies and banners?')) {
+        localStorage.setItem('kjerry_movies', JSON.stringify(INITIAL_MOVIES));
+        localStorage.setItem('kjerry_categories', JSON.stringify(INITIAL_CATEGORIES));
+        localStorage.setItem('kjerry_banners', JSON.stringify(INITIAL_BANNERS));
+        appState.movies = INITIAL_MOVIES;
+        appState.categories = INITIAL_CATEGORIES;
+        appState.banners = INITIAL_BANNERS;
+        showToast('Sample catalog loaded successfully!', 'success');
+        closeFirebaseSettingsModal();
+        renderAll();
+      }
+    }
+
+    // --- Toast Notifications ---
+    let toastTimeout = null;
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      const msg = document.getElementById('toast-msg');
+      const icon = document.getElementById('toast-icon');
+
+      if (!toast || !msg) return;
+
+      msg.textContent = message;
+
+      if (type === 'success') {
+        icon.className = 'fa-solid fa-circle-check text-emerald-400';
+      } else if (type === 'error') {
+        icon.className = 'fa-solid fa-circle-xmark text-rose-400';
+      } else {
+        icon.className = 'fa-solid fa-circle-info text-blue-400';
+      }
+
+      toast.classList.remove('opacity-0', '-translate-y-2', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
+      }, 3000);
+    }
+
+    // --- Render All Master Function ---
+    function renderAll() {
+      renderBannerCarousel();
+      renderHomeCategoryPills();
+      renderMovieCarousels();
+      if (appState.activePage === 'search') renderSearchPage();
+      if (appState.activePage === 'categories') renderCategoriesPage();
+      if (appState.activePage === 'profile') renderProfilePage();
+    }
+
+    // --- Keyboard Shortcut: Escape to close modal ---
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeVideoPlayer();
+        closeMovieDetails();
+        closeFirebaseSettingsModal();
+      }
+    });
+
+    // --- App Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+      initDatabase();
+      renderAll();
+    });
+  </script>
+</body>
+</html>
